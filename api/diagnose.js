@@ -3,7 +3,7 @@
 module.exports = async (req, res) => {
   // Importar fetch dinámicamente (necesario en CommonJS + Vercel)
   const fetch = (await import('node-fetch')).default;
-
+ 
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');

@@ -1,22 +1,15 @@
 export default async function handler(req, res) {
   try {
-    if (req.method !== "POST") {
-      return res.status(405).json({ error: "Only POST allowed" });
-    }
-
-    const { clinicalData } = req.body;
-
-    if (!clinicalData) {
-      return res.status(400).json({ error: "Missing clinicalData" });
-    }
+    const body = await req.json();
 
     const prompt = `
-Eres un psicólogo clínico experto. Analiza estos datos y devuelve diagnóstico en JSON estricto.
+Eres un asistente clínico experto en DSM-5 y CIE-10.
+Evalúa los datos del paciente y genera un diagnóstico en formato JSON estricto.
 
-Datos:
-${JSON.stringify(clinicalData, null, 2)}
+DATOS DEL PACIENTE:
+${JSON.stringify(body, null, 2)}
 
-Responde SOLO en formato JSON con:
+Responde SOLO en JSON con:
 {
   "diagnosis": {
     "name": "",
@@ -25,33 +18,33 @@ Responde SOLO en formato JSON con:
   },
   "explanation": "",
   "recommendations": []
-}
-    `;
-
-    const openrouterKey = process.env.OPENROUTER_API_KEY;
+}`;
 
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${openrouterKey}`,
+        "Authorization": "Bearer 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",
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
         model: "openai/gpt-4o-mini",
-        messages: [{ role: "user", content: prompt }]
+        messages: [
+          { role: "system", content: "Eres un modelo clínico experto." },
+          { role: "user", content: prompt }
+        ]
       })
     });
 
     const data = await response.json();
+    console.log("RAW RESPONSE:", data);
 
     return res.status(200).json({
       success: true,
-      raw: data,
-      diagnosis: data.choices?.[0]?.message?.content || "No response"
+      raw: data
     });
 
-  } catch (e) {
-    console.error("Backend error:", e);
-    res.status(500).json({ error: "Server error", detail: e.toString() });
+  } catch (err) {
+    console.error("ERROR:", err);
+    return res.status(500).json({ error: "Internal backend error", detail: err.message });
   }
 }

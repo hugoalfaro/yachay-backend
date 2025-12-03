@@ -2,7 +2,8 @@
   "version": 2,
   "functions": {
     "api/diagnose.js": {
-      "runtime": "nodejs18.x"
+      "runtime": "nodejs18.x",
+      "memory": 1024
     }
   },
   "routes": [
@@ -12,3 +13,4 @@
     }
   ]
 }
+

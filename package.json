@@ -1,12 +1,5 @@
 {
   "name": "yachay-backend",
   "version": "1.0.0",
-  "type": "module",
-  "main": "index.js",
-  "scripts": {
-    "start": "node api/diagnose.js"
-  },
-  "dependencies": {
-    "node-fetch": "^3.3.2"
-  }
+  "type": "module"
 }

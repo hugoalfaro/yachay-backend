@@ -1,51 +1,57 @@
-// api/diagnose.js — versión estable para Vercel
+// api/diagnose.js
+import fetch from "node-fetch";
 
-module.exports = async (req, res) => {
-  // Importar fetch dinámicamente (necesario en CommonJS + Vercel)
-  const fetch = (await import('node-fetch')).default;
- 
-  // CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+export default async function handler(req, res) {
 
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  if (req.method === 'GET') {
-    return res.status(200).json({ ok: true, msg: 'Diagnose API active' });
+  if (req.method === "OPTIONS") return res.status(200).end();
+
+  if (req.method === "GET") {
+    return res.status(200).json({
+      ok: true,
+      message: "YACHAY backend activo. Usa POST."
+    });
   }
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: "Missing OPENROUTER_API_KEY" });
+  const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+
+  if (!OPENROUTER_API_KEY) {
+    return res.status(500).json({
+      error: "Falta la variable OPENROUTER_API_KEY en Vercel"
+    });
   }
 
-  try {
-    const clinical = req.body;
+  const body = req.body;
 
-    const prompt = `
-Eres un clínico experto. Evalúa el JSON del paciente estrictamente en formato JSON.
+  const prompt = `
+Eres un asistente clínico experto. Evalúa los siguientes datos y responde SOLO en JSON:
 
-PACIENTE:
-${JSON.stringify(clinical, null, 2)}
-
-Responde SOLO en JSON así:
 {
-  "diagnosis": { "name": "", "icd10": "", "confidence": 0 },
-  "differential_diagnoses": [],
+  "diagnosis": {
+    "name": "",
+    "icd10": "",
+    "confidence": 0-100
+  },
   "explanation": "",
-  "recommendations": []
+  "recommendations": ["", ""]
 }
+
+DATOS DEL PACIENTE:
+${JSON.stringify(body)}
 `;
 
-    const r = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+  try {
+    const aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${apiKey}`,
+        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
@@ -57,18 +63,17 @@ Responde SOLO en JSON así:
       })
     });
 
-    const data = await r.json();
+    const json = await aiResponse.json();
 
-    let raw = data?.choices?.[0]?.message?.content ?? "";
+    let raw = json?.choices?.[0]?.message?.content || "";
     let parsed = null;
 
-    try { parsed = JSON.parse(raw); } catch (e) {}
+    try { parsed = JSON.parse(raw); } catch(e) {}
 
     return res.status(200).json({
-      ok: true,
       parsed,
-      raw,
-      provider: data
+      rawText: raw,
+      providerRaw: json
     });
 
   } catch (err) {
@@ -77,4 +82,5 @@ Responde SOLO en JSON así:
       detail: err.message
     });
   }
-};
+}
+

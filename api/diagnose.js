@@ -3,11 +3,15 @@ import fetch from "node-fetch";
 
 export default async function handler(req, res) {
 
+  // Siempre enviar CORS (incluso si hay error)
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  if (req.method === "OPTIONS") return res.status(200).end();
+  // Preflight
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
 
   if (req.method === "GET") {
     return res.status(200).json({
@@ -24,13 +28,13 @@ export default async function handler(req, res) {
 
   if (!apiKey) {
     return res.status(500).json({
-      error: "Falta variable OPENROUTER_API_KEY",
+      error: "Falta variable OPENROUTER_API_KEY"
     });
   }
 
   try {
     const prompt = `
-Eres un asistente clínico experto. Responde SOLO en JSON limpio.
+Eres un asistente clínico experto. Responde SOLO en JSON.
 DATOS:
 ${JSON.stringify(req.body)}
 `;
@@ -52,30 +56,28 @@ ${JSON.stringify(req.body)}
 
     const providerRaw = await response.json();
 
-    // 🔥 Log completo para debug
-    console.log("OPENROUTER RAW RESPONSE:", providerRaw);
+    console.log("OpenRouter RAW:", providerRaw);
 
-    let rawText =
-      providerRaw?.choices?.[0]?.message?.content || "";
-
+    const rawText = providerRaw?.choices?.[0]?.message?.content || "";
     let parsed = null;
 
-    try {
-      parsed = JSON.parse(rawText);
-    } catch {}
+    try { parsed = JSON.parse(rawText); } catch {}
 
     return res.status(200).json({
       parsed,
       rawText,
-      providerRaw,  // <---- LO NECESITO PARA VER POR QUÉ FALLA
+      providerRaw
     });
 
-  } catch (err) {
-    console.error("ERROR BACKEND:", err);
+  } catch (error) {
+
+    console.error("ERROR BACKEND:", error);
+
     return res.status(500).json({
       error: "Exception in backend",
-      detail: err.message,
+      detail: error.message
     });
   }
 }
+
 

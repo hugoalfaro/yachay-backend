@@ -1,15 +1,9 @@
 {
   "version": 2,
-  "functions": {
-    "api/diagnose.cjs": {
-      "runtime": "nodejs18.x"
-    }
-  },
   "routes": [
     {
-      "src": "/api/diagnose",
-      "dest": "api/diagnose.js"
+      "src": "/api/(.*)",
+      "dest": "/api/$1.js"
     }
   ]
 }
-

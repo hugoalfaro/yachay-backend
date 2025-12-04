@@ -48,7 +48,7 @@ ${JSON.stringify(clinicalData, null, 2)}
       headers: {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://victorhugoalfaro.com",
+        "HTTP-Referer": "https://victorhugoalfaro.com/yachay",
         "X-Title": "YACHAY Backend"
       },
       body: JSON.stringify({

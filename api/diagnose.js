@@ -1,45 +1,37 @@
 // api/diagnose.js
 import fetch from "node-fetch";
 
-// Handler compatible con Vercel (Node 18)
 export default async function handler(req, res) {
 
-  // CORS permitido para cualquier origen
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  // Preflight (CORS)
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
+  if (req.method === "OPTIONS") return res.status(200).end();
 
-  // Test de conexión (GET)
   if (req.method === "GET") {
     return res.status(200).json({
       ok: true,
-      message: "YACHAY backend está activo. Usa POST para diagnóstico."
+      message: "YACHAY backend activo. Usa POST."
     });
   }
 
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Método no permitido. Usa POST." });
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
   if (!OPENROUTER_API_KEY) {
     return res.status(500).json({
-      error: "Falta OPENROUTER_API_KEY en variables de entorno de Vercel."
+      error: "Falta la variable OPENROUTER_API_KEY en Vercel"
     });
   }
 
-  try {
-    const clinicalData = req.body;
+  const body = req.body;
 
-    const prompt = `
-Eres un asistente clínico experto en DSM-5-TR y CIE-11.
-Evalúa estos datos y devuelve SOLO un JSON estricto:
+  const prompt = `
+Eres un asistente clínico experto. Evalúa los siguientes datos y responde SOLO en JSON:
 
 {
   "diagnosis": {
@@ -51,54 +43,44 @@ Evalúa estos datos y devuelve SOLO un JSON estricto:
   "recommendations": ["", ""]
 }
 
-Datos:
-${JSON.stringify(clinicalData, null, 2)}
+DATOS DEL PACIENTE:
+${JSON.stringify(body)}
 `;
 
-    // Llamada a OpenRouter
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+  try {
+    const aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://victorhugoalfaro.com",
-        "X-Title": "YACHAY Backend"
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({
         model: "openai/gpt-4o-mini",
         messages: [
-          { role: "system", content: "Eres un asistente clínico." },
+          { role: "system", content: "Eres un modelo clínico experto." },
           { role: "user", content: prompt }
         ]
       })
     });
 
-    const data = await response.json();
+    const json = await aiResponse.json();
 
-    let rawText = data?.choices?.[0]?.message?.content || "";
+    let raw = json?.choices?.[0]?.message?.content || "";
     let parsed = null;
 
-    try {
-      parsed = JSON.parse(rawText);
-    } catch (e) {
-      parsed = null;
-    }
+    try { parsed = JSON.parse(raw); } catch(e) {}
 
-    // Respuesta al front
     return res.status(200).json({
-      success: true,
       parsed,
-      rawText,
-      providerRaw: data
+      rawText: raw,
+      providerRaw: json
     });
 
   } catch (err) {
-    console.error("ERROR EN /api/diagnose:", err);
     return res.status(500).json({
-      error: "Error interno en backend",
+      error: "Backend error",
       detail: err.message
     });
   }
 }
-
 

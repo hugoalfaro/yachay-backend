@@ -8,7 +8,7 @@
   "routes": [
     {
       "src": "/api/diagnose",
-      "dest": "api/diagnose.cjs"
+      "dest": "api/diagnose.js"
     }
   ]
 }
